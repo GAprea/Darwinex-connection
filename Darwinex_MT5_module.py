@@ -3,11 +3,10 @@
 
 # In[ ]:
 
-
-import MetaTrader5 as mt5
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import MetaTrader5 as mt5
 from scipy.stats import kendalltau
 pd.options.display.float_format = '{:.4f}'.format
 from datetime import datetime, timedelta
@@ -16,7 +15,7 @@ class Darwinex:
     """
     A class to interact with MetaTrader5 for fetching and analyzing forex or stock data.
     """
-    def __init__(self, start_time=None, lookback_days=250, timeframe=mt5.TIMEFRAME_D1, end_time=None):
+    def __init__(self, start_time = None, lookback_days = 250, timeframe = mt5.TIMEFRAME_D1, end_time = None):
         """
         Initializes the Darwinex object with specified parameters for data retrieval.
         
@@ -33,7 +32,7 @@ class Darwinex:
             self.end_time = end_time
         
         if start_time is None:
-            self.start_time = self.end_time - timedelta(days=lookback_days)
+            self.start_time = self.end_time - timedelta(days = lookback_days)
         else:
             self.start_time = start_time
         
@@ -53,10 +52,11 @@ class Darwinex:
             list: List of non-excluded symbol objects.
         """
         exclusion_filter = "*,!" + ",!*".join(exclusions)
-        symbols = mt5.symbols_get(group=exclusion_filter)
+        symbols = mt5.symbols_get(group = exclusion_filter)
         return symbols
     
-    def get_historical_data(self, symbols):
+    
+    def get_historical_data(self, symbols, period = False):
         """
         Retrieves historical data for the given symbols.
         
@@ -68,12 +68,24 @@ class Darwinex:
         """
         symbol_names = [symbol.name for symbol in symbols] 
         historical_data = {}
-        for symbol in symbol_names:
-            rates = mt5.copy_rates_range(symbol, self.timeframe, self.start_time, self.end_time)
-            if rates is not None and len(rates) > 0:
-                df = pd.DataFrame(rates)
-                df['time'] = pd.to_datetime(df['time'], unit='s')
-                df.set_index('time', inplace=True)
-                df['log_returns'] = np.log(df['close'] / df['close'].shift(1))
-                historical_data[symbol] = df[['close', 'log_returns']]
-        return historical_data
+        if period == True:
+            for symbol in symbol_names:
+                rates = mt5.copy_rates_range(symbol, self.timeframe, self.start_time, self.end_time)
+                if rates is not None and len(rates) > 0:
+                    df = pd.DataFrame(rates)
+                    df['time'] = pd.to_datetime(df['time'], unit='s')
+                    df.set_index('time', inplace=True)
+                    df['log_returns'] = np.log(df['close'] / df['close'].shift(1))
+                    historical_data[symbol] = df[['close', 'log_returns']]
+            return historical_data
+        else:
+            for symbol in symbol_names:
+                rates = mt5.copy_rates_from(symbol, self.timeframe, self.start_time, 100000)
+                if rates is not None and len(rates) > 0:
+                    df = pd.DataFrame(rates)
+                    df['time'] = pd.to_datetime(df['time'], unit='s')
+                    df.set_index('time', inplace=True)
+                    df['log_returns'] = np.log(df['close'] / df['close'].shift(1))
+                    historical_data[symbol] = df[['close', 'log_returns']]
+            return historical_data
+            
